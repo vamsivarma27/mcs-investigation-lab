@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCS · Investigation Lab</title><link rel="stylesheet" href="/app.css"></head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brandmark">M<span>•</span></div><div><strong>MCS</strong><small>INVESTIGATION LAB</small></div></div>
+    <div class="side-label">WORKSPACE</div>
+    <nav id="nav">
+      <button data-view="overview" class="active"><span>◫</span> Command center</button>
+      <button data-view="agents"><span>⌘</span> Agent swarm</button>
+      <button data-view="activity"><span>≡</span> Live activity</button>
+      <button data-view="communications"><span>⇄</span> Communications</button>
+      <button data-view="evidence"><span>▤</span> Evidence room</button>
+      <button data-view="suspects"><span>◎</span> Suspect board</button>
+      <button data-view="hypotheses"><span>⌁</span> Hypotheses</button>
+      <button data-view="consensus"><span>◇</span> Consensus</button>
+      <button data-view="replay"><span>▶</span> Replay</button>
+      <button data-view="evaluation"><span>◈</span> Evaluation</button>
+      <button data-view="graph"><span>⟐</span> Influence graph</button>
+      <button data-view="integrity"><span>⬡</span> Audit integrity</button>
+      <button data-view="compare"><span>▥</span> Compare runs</button>
+    </nav>
+    <div class="side-bottom"><div class="live-dot"></div><span>LOCAL RESEARCH ENVIRONMENT</span></div>
+  </aside>
+  <main>
+    <header class="topbar"><div class="crumb">RESEARCH / <strong id="current-view-label">COMMAND CENTER</strong></div><div class="top-actions"><span id="mode-badge" class="mode-badge"></span><select id="run-select" aria-label="Select run"><option value="">No run selected</option></select><button id="new-run" class="primary">+ New investigation</button></div></header>
+    <div class="content"><div class="page-head"><div><div class="eyebrow">AUTONOMOUS SYSTEMS RESEARCH</div><h1 id="page-title">Investigation command center</h1><p id="page-subtitle">Observe evidence, beliefs, and information flow across autonomous investigators.</p></div><div id="phase-chip" class="phase-chip">NO RUN</div></div><div id="view"></div></div>
+  </main>
+</div>
+<div id="toast" role="status"></div>
+<script src="/app.js"></script>
+</body></html>
