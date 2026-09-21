@@ -9,10 +9,11 @@ from pydantic import BaseModel, Field
 
 from .config import Settings
 from .orchestrator import Orchestrator
+from .report import build_run_report
 
 settings = Settings()
 lab = Orchestrator(settings)
-app = FastAPI(title="MCS Investigation Lab", version="0.1.0", docs_url="/api/docs", redoc_url=None)
+app = FastAPI(title="MCS Investigation Lab", version="0.2.0", docs_url="/api/docs", redoc_url=None)
 STATIC = Path(__file__).parent / "static"
 
 
@@ -81,6 +82,14 @@ def integrity(run_id: str):
     except KeyError:
         raise HTTPException(404, "Run not found") from None
     return lab.ledger.verify(run_id)
+
+
+@app.get("/api/runs/{run_id}/report")
+def report(run_id: str):
+    try:
+        return build_run_report(lab.ledger, lab.case, run_id)
+    except KeyError:
+        raise HTTPException(404, "Run not found") from None
 
 
 @app.get("/api/compare")

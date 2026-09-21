@@ -55,13 +55,16 @@ class OpenRouterProvider:
               tools: list[dict] | None = None) -> tuple[dict, int]:
         start = time.monotonic()
         body = {"model": model, "messages": messages, "temperature": 0.2,
-                "max_completion_tokens": 900}
+                "max_completion_tokens": 1800, "reasoning_effort": "minimal"}
         if schema is not None:
             body["response_format"] = {"type": "json_schema", "json_schema": {
                 "name": "decision", "strict": True, "schema": schema}}
             body["provider"] = {"require_parameters": True}
         if tools is not None:
-            body.update({"tools": tools, "tool_choice": "required", "parallel_tool_calls": False})
+            tool_choice: str | dict = "required"
+            if len(tools) == 1:
+                tool_choice = {"type": "function", "function": {"name": tools[0]["function"]["name"]}}
+            body.update({"tools": tools, "tool_choice": tool_choice, "parallel_tool_calls": False})
         response = httpx.post(
             self.URL,
             headers={"Authorization": f"Bearer {self.settings.api_key}", "Content-Type": "application/json"},
@@ -82,7 +85,9 @@ class OpenRouterProvider:
             "Choose exactly one permitted tool action and explain your observable reason. "
             "Never claim to have used a tool you did not use. Cite evidence IDs. "
             "You have no internet, shell, filesystem, or database capability. "
-            "Do not repeat failed tools."
+            "Review recent_actions before choosing. Never repeat an identical tool and arguments. "
+            "Inspect the crime scene only once, then gather new evidence, record hypotheses, communicate, "
+            "and move toward a conclusion. Do not repeat failed tools."
         )
         data, latency = self._post(self.settings.investigator_model,
                                    [{"role": "system", "content": system},
@@ -90,7 +95,8 @@ class OpenRouterProvider:
         message = data["choices"][0]["message"]
         calls = message.get("tool_calls") or []
         if len(calls) != 1:
-            raise ValueError("Model must request exactly one controlled tool")
+            finish = data["choices"][0].get("finish_reason", "unknown")
+            raise ValueError(f"Model must request exactly one controlled tool (finish_reason={finish})")
         function = calls[0]["function"]
         action = Action(tool=function["name"], args=json.loads(function["arguments"]),
                         explanation=(message.get("content") or f"Selected {function['name']}")[:2000])

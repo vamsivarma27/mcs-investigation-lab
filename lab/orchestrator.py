@@ -50,9 +50,9 @@ class Orchestrator:
                   "max_total_agents": self.settings.max_total_agents,
                   "max_workers_per_lead": self.settings.max_workers_per_lead,
                   "max_depth": self.settings.max_depth, "max_cost_usd": self.settings.max_cost_usd},
-                  "prompt_version": "investigator-v1", "tool_version": "tools-v1", "scoring_version": "rubric-v1",
+                  "prompt_version": "investigator-v2", "tool_version": "tools-v2", "scoring_version": "rubric-v1",
                   "case_version": self.case.data["version"], "case_hash": self.case.version_hash,
-                  "app_version": "0.1.0", "git_commit": self._git_commit(), "lead_count": lead_count}
+                  "app_version": "0.2.0", "git_commit": self._git_commit(), "lead_count": lead_count}
         with self.ledger.connect() as db:
             db.execute("INSERT INTO runs (id,phase,created_at,case_hash,config) VALUES (?,?,?,?,?)",
                        (run_id, "CREATED", utcnow(), self.case.version_hash, canonical(config)))
@@ -102,12 +102,34 @@ class Orchestrator:
                                                           (run_id, agent["id"]))]
             findings = [dict(row) for row in db.execute("SELECT * FROM findings WHERE run_id=? AND agent_id=?",
                                                        (run_id, agent["id"]))]
+            sent_messages = db.execute(
+                "SELECT COUNT(*) AS n FROM messages WHERE run_id=? AND sender=?", (run_id, agent["id"])
+            ).fetchone()["n"]
             peers = [{"id": row["id"], "role": row["role"]} for row in db.execute(
                 "SELECT id,role FROM agents WHERE run_id=? AND parent_id IS NULL", (run_id,))]
+        recent_actions = []
+        for event in self.ledger.events(run_id):
+            if event["agent_id"] == agent["id"] and event["event_type"] in {"TOOL_REQUEST", "TOOL_DENIED"}:
+                item = {"event": event["event_type"], **event["payload"]}
+                recent_actions.append(item)
         allowed = [name for name in SCHEMAS if stage == "investigation" or
                    (stage == "independent" and name == "submit_final_accusation") or
                    (stage == "deliberation" and name in {"send_message", "request_peer_review", "share_finding", "challenge_hypothesis"}) or
                    (stage == "final" and name == "submit_final_accusation")]
+        requested_tools = {item.get("tool") for item in recent_actions if item["event"] == "TOOL_REQUEST"}
+        if stage == "investigation":
+            allowed = [name for name in allowed
+                       if name not in {"inspect_crime_scene", "inspect_timeline"} or name not in requested_tools]
+            if agent["tool_calls"] >= 4 and not hypotheses:
+                allowed = ["submit_hypothesis"]
+                progress_instruction = "Record an evidence-cited hypothesis now before gathering more evidence."
+            elif agent["tool_calls"] >= 5 and not sent_messages:
+                allowed = ["send_message", "request_peer_review", "share_finding"]
+                progress_instruction = "Share evidence or request peer review now before the conclusion stage."
+            else:
+                progress_instruction = "Choose a new action. Do not repeat the same tool and arguments."
+        else:
+            progress_instruction = "Complete the required action for this stage."
         return {"case": self.case.overview(),
                 "agent": {"id": agent["id"], "role": agent["role"], "task": agent["task"],
                           "parent_id": agent["parent_id"], "tool_calls": agent["tool_calls"]},
@@ -115,7 +137,9 @@ class Orchestrator:
                 "inbox": [{**m, "related_evidence": json.loads(m["related_evidence"])} for m in inbox],
                 "own_hypotheses": [{**h, "support": json.loads(h["support"]), "contradict": json.loads(h["contradict"])} for h in hypotheses],
                 "own_findings": [{**f, "evidence": json.loads(f["evidence"])} for f in findings],
-                "peers": peers, "allowed_tools": {name: SCHEMAS[name].model_json_schema() for name in allowed}}
+                "peers": peers, "recent_actions": recent_actions[-12:],
+                "progress_instruction": progress_instruction,
+                "allowed_tools": {name: SCHEMAS[name].model_json_schema() for name in allowed}}
 
     def _resource_usage(self, run_id: str) -> dict:
         events = self.ledger.events(run_id)
@@ -212,6 +236,8 @@ class Orchestrator:
         except Exception as exc:
             with self.ledger.connect() as db:
                 db.execute("UPDATE runs SET phase='FAILED',error=?,finished_at=? WHERE id=?", (str(exc)[:500], utcnow(), run_id))
+                db.execute("UPDATE agents SET status='failed',terminated_at=? WHERE run_id=? AND status='active'",
+                           (utcnow(), run_id))
             self.ledger.append(run_id, "RUN_FAILED", {"error": str(exc)[:500]})
             raise
 

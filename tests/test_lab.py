@@ -64,6 +64,7 @@ def test_private_knowledge_explicit_message_and_injection_is_data(lab):
 
 def test_full_offline_run_persists_evaluates_and_replays(lab):
     from lab.graph import build_graph
+    from lab.report import build_run_report
 
     run = lab.create()
     lab.execute(run)
@@ -87,6 +88,10 @@ def test_full_offline_run_persists_evaluates_and_replays(lab):
     graph = build_graph(lab.ledger, run)
     assert any(node["label"] == "Lead 1" for node in graph["nodes"])
     assert any(edge["type"] == "RECEIVED" for edge in graph["edges"])
+    report = build_run_report(lab.ledger, lab.case, run)
+    assert report["headline"] == "Investigation completed"
+    assert report["metrics"]["audit_valid"]
+    assert report["charts"]["tool_usage"]
     # Fresh process-like reader reconstructs the same ordered history.
     assert len(Ledger(lab.settings.database_path).events(run)) == len(events)
 
@@ -150,7 +155,11 @@ def test_openrouter_provider_uses_controlled_tool_schema_and_decision_endpoint(m
     assert result.model == "real-investigator-version"
     assert calls[0][0].endswith('/chat/completions')
     assert calls[0][2]['tools'][0]['function']['name'] == "inspect_crime_scene"
-    assert calls[0][2]['tool_choice'] == "required"
+    assert calls[0][2]['reasoning_effort'] == "minimal"
+    assert calls[0][2]['max_completion_tokens'] == 1800
+    assert calls[0][2]['tool_choice'] == {
+        "type": "function", "function": {"name": "inspect_crime_scene"}
+    }
     assert calls[1][0].endswith('/api/alpha/decisions')
     assert calls[1][2]['questions']['next_action']['type'] == "choice"
     assert decision['choice'] == "inspect_crime_scene"
@@ -180,3 +189,35 @@ def test_missing_accusations_fail_closed(lab):
     lab._transition(run, "INDEPENDENT_CONCLUSIONS")
     with pytest.raises(RuntimeError, match="0/2"):
         lab._require_accusations(run, "independent")
+
+
+def test_duplicate_read_is_denied_and_recent_actions_are_in_context(lab):
+    run = lab.create(lead_count=2)
+    lab._transition(run, "INITIALIZING")
+    lab._create_leads(run)
+    lab._transition(run, "INVESTIGATING")
+    lead = lab._agents(run)[0]
+    assert "scene" in lab.tools.dispatch(run, lead["id"], "inspect_crime_scene", {})
+    repeated = lab.tools.dispatch(run, lead["id"], "inspect_crime_scene", {})
+    assert repeated["denied"]
+    assert "Duplicate investigation action" in repeated["error"]
+    context = lab._context(run, lab._agents(run)[0], "investigation")
+    assert context["recent_actions"][-1]["tool"] == "inspect_crime_scene"
+
+
+def test_failed_report_explains_why_evaluation_is_unavailable(lab):
+    from lab.report import build_run_report
+
+    run = lab.create(lead_count=2)
+    lab._transition(run, "INITIALIZING")
+    lab._create_leads(run)
+    with lab.ledger.connect() as db:
+        db.execute("UPDATE runs SET phase='FAILED',error=?,finished_at=created_at WHERE id=?",
+                   ("Cannot continue: 0/2 leads submitted independent accusations", run))
+        db.execute("UPDATE agents SET status='failed' WHERE run_id=?", (run,))
+    lab.ledger.append(run, "RUN_FAILED", {"error": "Missing accusations"})
+    report = build_run_report(lab.ledger, lab.case, run)
+    assert report["tone"] == "error"
+    assert report["failure_reason"].startswith("Cannot continue")
+    assert report["metrics"]["accusations"] == 0
+    assert any("structured accusation" in item for item in report["recommended_actions"])

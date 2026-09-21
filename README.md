@@ -89,7 +89,7 @@ node --check lab/static/app.js
 uv run python -m lab.validate_case
 ```
 
-Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. Use **Compare runs** to inspect completed runs on the same case. The HTTP API is documented at `/api/docs`. Useful local endpoints are `/api/health`, `/api/case`, `/api/runs`, `/api/compare`, and `/api/runs/{run_id}`.
+Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. The command center opens the latest run and explains its progress with lifecycle, evidence coverage, tool usage, event composition, and per-agent charts. Use **Compare runs** to inspect completed runs on the same case. The HTTP API is documented at `/api/docs`. Useful local endpoints are `/api/health`, `/api/case`, `/api/runs`, `/api/compare`, `/api/runs/{run_id}`, and `/api/runs/{run_id}/report`.
 
 ## Current limits
 

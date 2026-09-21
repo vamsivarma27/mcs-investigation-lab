@@ -133,6 +133,18 @@ class ToolDispatcher:
     def _known(self, agent: dict) -> set[str]:
         return set(agent["private_state"].get("known_evidence", []))
 
+    def _reject_duplicate_read(self, run_id: str, agent_id: str, tool: str, raw_args: dict) -> None:
+        repeatable_reads = {"inspect_crime_scene", "inspect_evidence", "request_forensic_analysis",
+                            "interview_suspect", "search_case_records", "inspect_timeline"}
+        if tool not in repeatable_reads:
+            return
+        target = canonical({"tool": tool, "args": raw_args})
+        requests = [event for event in self.ledger.events(run_id)
+                    if event["agent_id"] == agent_id and event["event_type"] == "TOOL_REQUEST"]
+        # The current request has already been appended, so any earlier match makes it a duplicate.
+        if any(canonical(event["payload"]) == target for event in requests[:-1]):
+            raise PolicyError("Duplicate investigation action; choose a new tool or different arguments")
+
     def _grant(self, run_id: str, agent: dict, items: list[dict], source: str) -> list[dict]:
         known = self._known(agent)
         new = []
@@ -165,6 +177,7 @@ class ToolDispatcher:
                 raise PolicyError("Agent is not active")
             if agent["tool_calls"] >= self.settings.max_tools_per_agent:
                 raise PolicyError("Agent tool budget exhausted")
+            self._reject_duplicate_read(run_id, agent_id, tool, raw_args)
             if phase == "INDEPENDENT_CONCLUSIONS" and tool != "submit_final_accusation":
                 raise PolicyError("Only independent accusation is allowed in this phase")
             if phase == "DELIBERATION" and tool == "submit_final_accusation":
