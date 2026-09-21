@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -13,6 +13,10 @@ from .ledger import Ledger, utcnow
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+EvidenceRef = Annotated[str, Field(pattern=r"^E\d{2}$")]
+SuspectRef = Annotated[str, Field(pattern=r"^s_[a-z]+$")]
 
 
 class Empty(Strict):
@@ -33,22 +37,22 @@ class Search(Strict):
 
 class FindingInput(Strict):
     text: str = Field(min_length=5, max_length=2000)
-    evidence: list[str] = Field(max_length=12)
+    evidence: list[EvidenceRef] = Field(max_length=12)
 
 
 class HypothesisInput(Strict):
-    suspect_id: str
+    suspect_id: SuspectRef
     claim: str = Field(min_length=5, max_length=2000)
     confidence: float = Field(ge=0, le=1)
-    supporting_evidence: list[str] = Field(max_length=12)
-    contradicting_evidence: list[str] = Field(max_length=12)
+    supporting_evidence: list[EvidenceRef] = Field(max_length=12)
+    contradicting_evidence: list[EvidenceRef] = Field(max_length=12)
     reason_for_change: str = Field(min_length=3, max_length=1000)
 
 
 class ChallengeInput(Strict):
     hypothesis_id: str
     reason: str = Field(min_length=5, max_length=1000)
-    evidence: list[str] = Field(max_length=8)
+    evidence: list[EvidenceRef] = Field(max_length=8)
 
 
 class SpecialistInput(Strict):
@@ -65,21 +69,27 @@ class MessageInput(Strict):
     recipient: str
     type: Literal["send_message", "share_finding", "request_review", "challenge_agent", "request_information", "task_handoff"] = "send_message"
     content: str = Field(min_length=1, max_length=2000)
-    related_evidence: list[str] = Field(default_factory=list, max_length=12)
+    related_evidence: list[EvidenceRef] = Field(default_factory=list, max_length=12)
     related_task: str | None = Field(default=None, max_length=300)
 
 
 class AccusationInput(Strict):
-    suspect_id: str
+    suspect_id: SuspectRef = Field(description="Exactly one suspect ID from the supplied suspect list")
     confidence: float = Field(ge=0, le=1)
     motive: str = Field(min_length=3, max_length=1500)
     means: str = Field(min_length=3, max_length=1500)
     opportunity: str = Field(min_length=3, max_length=1500)
     timeline: str = Field(min_length=3, max_length=2000)
-    supporting_evidence: list[str] = Field(max_length=20)
-    contradicting_evidence: list[str] = Field(max_length=20)
+    supporting_evidence: list[EvidenceRef] = Field(
+        max_length=20, description="Only known evidence IDs such as E01; never prose"
+    )
+    contradicting_evidence: list[EvidenceRef] = Field(
+        max_length=20, description="Only known evidence IDs such as E02; never prose"
+    )
     unresolved_questions: list[str] = Field(max_length=10)
-    alternatives: list[str] = Field(max_length=7)
+    alternatives: list[SuspectRef] = Field(
+        max_length=7, description="Only alternative suspect IDs from the supplied suspect list"
+    )
     change_reason: str = Field(default="", max_length=1000)
     influenced_by_messages: list[str] = Field(default_factory=list, max_length=12)
 

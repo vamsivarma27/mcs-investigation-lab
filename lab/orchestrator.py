@@ -148,7 +148,8 @@ class Orchestrator:
                 self.ledger.append(run_id, "JEV_DECISION", recommendation, agent_id)
             except Exception as exc:  # noqa: BLE001 - audit and contain model/runtime failures
                 self.ledger.append(run_id, "JEV_ERROR", {"error": str(exc)[:300]}, agent_id)
-        for attempt in range(2):
+        attempts = 3 if stage in {"independent", "final"} else 2
+        for attempt in range(attempts):
             usage = self._resource_usage(run_id)
             if usage["model_calls"] >= self.settings.max_model_calls or usage["cost_usd"] >= self.settings.max_cost_usd:
                 self.ledger.append(run_id, "BUDGET_EXHAUSTED", usage, agent_id)
@@ -170,8 +171,8 @@ class Orchestrator:
                 return
             except Exception as exc:  # noqa: BLE001 - audit and contain model/runtime failures
                 self.ledger.append(run_id, "MODEL_ERROR", {"attempt": attempt + 1, "error": str(exc)[:500]}, agent_id)
-                if attempt == 0:
-                    self.ledger.append(run_id, "MODEL_RETRY", {"attempt": 2}, agent_id)
+                if attempt + 1 < attempts:
+                    self.ledger.append(run_id, "MODEL_RETRY", {"attempt": attempt + 2}, agent_id)
         if stage in {"independent", "final"}:
             self.ledger.append(run_id, "ACCUSATION_MISSING", {"stage": stage}, agent_id)
 
@@ -187,11 +188,13 @@ class Orchestrator:
             self._transition(run_id, "INDEPENDENT_CONCLUSIONS")
             for agent in self._agents(run_id, leads_only=True):
                 self._turn(run_id, agent["id"], "independent")
+            self._require_accusations(run_id, "independent")
             self._transition(run_id, "DELIBERATION")
             for agent in self._agents(run_id, leads_only=True):
                 self._turn(run_id, agent["id"], "deliberation")
             for agent in self._agents(run_id, leads_only=True):
                 self._turn(run_id, agent["id"], "final")
+            self._require_accusations(run_id, "final")
             self._transition(run_id, "FINALIZED")
             self.ledger.append(run_id, "RUN_FINALIZED", {})
             self._transition(run_id, "GROUND_TRUTH_UNSEALED")
@@ -211,6 +214,19 @@ class Orchestrator:
                 db.execute("UPDATE runs SET phase='FAILED',error=?,finished_at=? WHERE id=?", (str(exc)[:500], utcnow(), run_id))
             self.ledger.append(run_id, "RUN_FAILED", {"error": str(exc)[:500]})
             raise
+
+    def _require_accusations(self, run_id: str, stage: str) -> None:
+        with self.ledger.connect() as db:
+            leads = db.execute(
+                "SELECT COUNT(*) AS n FROM agents WHERE run_id=? AND parent_id IS NULL", (run_id,)
+            ).fetchone()["n"]
+            accusations = db.execute(
+                "SELECT COUNT(*) AS n FROM accusations WHERE run_id=? AND stage=?", (run_id, stage)
+            ).fetchone()["n"]
+        if accusations != leads:
+            raise RuntimeError(
+                f"Cannot continue: {accusations}/{leads} leads submitted {stage} accusations"
+            )
 
     def snapshot(self, run_id: str) -> dict:
         with self.ledger.connect() as db:

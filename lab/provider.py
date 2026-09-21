@@ -40,14 +40,26 @@ class OpenRouterProvider:
     def __init__(self, settings: Settings):
         self.settings = settings
 
+    @staticmethod
+    def _raise_provider_error(response: httpx.Response) -> None:
+        if response.is_success:
+            return
+        try:
+            payload = response.json()
+            message = payload.get("error", {}).get("message") or response.reason_phrase
+        except (ValueError, AttributeError):
+            message = response.reason_phrase
+        raise RuntimeError(f"OpenRouter HTTP {response.status_code}: {str(message)[:500]}")
+
     def _post(self, model: str, messages: list[dict], schema: dict | None = None,
               tools: list[dict] | None = None) -> tuple[dict, int]:
         start = time.monotonic()
         body = {"model": model, "messages": messages, "temperature": 0.2,
-                "max_completion_tokens": 900, "provider": {"require_parameters": True}}
+                "max_completion_tokens": 900}
         if schema is not None:
             body["response_format"] = {"type": "json_schema", "json_schema": {
                 "name": "decision", "strict": True, "schema": schema}}
+            body["provider"] = {"require_parameters": True}
         if tools is not None:
             body.update({"tools": tools, "tool_choice": "required", "parallel_tool_calls": False})
         response = httpx.post(
@@ -56,7 +68,7 @@ class OpenRouterProvider:
             json=body,
             timeout=90,
         )
-        response.raise_for_status()
+        self._raise_provider_error(response)
         return response.json(), int((time.monotonic() - start) * 1000)
 
     def decide(self, context: dict, stage: str) -> ModelResult:
@@ -96,7 +108,7 @@ class OpenRouterProvider:
                       "instructions": "Which permitted investigation action is most useful next?",
                       "criteria": {name: name.replace("_", " ") for name in candidates}}}},
             timeout=30)
-        response.raise_for_status()
+        self._raise_provider_error(response)
         data = response.json()
         answer = data["answers"]["next_action"]
         if answer.get("choice") not in candidates:

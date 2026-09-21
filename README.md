@@ -22,10 +22,12 @@ Copy `.env.example` to `.env`, fill in an OpenRouter API key, and load it into y
 set -a
 source .env
 set +a
-uv run uvicorn lab.api:app --host 127.0.0.1 --port 8765
+./scripts/start-local.sh
 ```
 
-Set `MODEL_PROVIDER=openrouter`, `OPENROUTER_API_KEY`, `INVESTIGATOR_MODEL`, and optionally `JEV_ENABLED=true` with `DECISION_MODEL=~typesafe/jev-latest`. The key remains server-side and `.env` is ignored by Git. The investigator model must support tool calling. The default model string is an example, so verify availability in your OpenRouter account. The live provider path has a mocked contract test, but **has not been run against OpenRouter without your key**.
+Set `MODEL_PROVIDER=openrouter`, `OPENROUTER_API_KEY`, `INVESTIGATOR_MODEL`, and optionally `JEV_ENABLED=true` with `DECISION_MODEL=~typesafe/jev-latest`. The key remains server-side and `.env` is ignored by Git. The investigator model must support tool calling. The default model string is an example, so verify availability in your OpenRouter account. The provider adapter has contract tests and was smoke tested with OpenRouter's free tier; paid-model and Jev behavior still require account credits.
+
+OpenRouter requires purchased credits for paid models and Jev. A key-level spending limit is not a credit balance. For a no-credit smoke test, use an explicit tool-capable free model such as `nex-agi/nex-n2.5-mini:free` and set `JEV_ENABLED=false`; free models may be rate limited or less reliable. Avoid the rotating `openrouter/free` alias for reproducible experiments because its underlying model can change between calls.
 
 The default data store is `./lab.sqlite3`, outside Git. Delete that file only if you intentionally want to erase local experiments. A run is immutable through the application after finalization.
 
@@ -87,7 +89,7 @@ node --check lab/static/app.js
 uv run python -m lab.validate_case
 ```
 
-Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. Use **Compare runs** to inspect completed runs on the same case. The HTTP API is documented at `/api/docs`.
+Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. Use **Compare runs** to inspect completed runs on the same case. The HTTP API is documented at `/api/docs`. Useful local endpoints are `/api/health`, `/api/case`, `/api/runs`, `/api/compare`, and `/api/runs/{run_id}`.
 
 ## Current limits
 

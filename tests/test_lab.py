@@ -119,6 +119,9 @@ def test_openrouter_provider_uses_controlled_tool_schema_and_decision_endpoint(m
     class Response:
         def __init__(self, data):
             self.data = data
+            self.is_success = True
+            self.status_code = 200
+            self.reason_phrase = "OK"
 
         def raise_for_status(self):
             pass
@@ -167,3 +170,13 @@ def test_accusation_cannot_cite_unreceived_message(lab):
         "contradicting_evidence": [], "unresolved_questions": [], "alternatives": [],
         "influenced_by_messages": ["invented"]})
     assert result["denied"]
+
+
+def test_missing_accusations_fail_closed(lab):
+    run = lab.create(lead_count=2)
+    lab._transition(run, "INITIALIZING")
+    lab._create_leads(run)
+    lab._transition(run, "INVESTIGATING")
+    lab._transition(run, "INDEPENDENT_CONCLUSIONS")
+    with pytest.raises(RuntimeError, match="0/2"):
+        lab._require_accusations(run, "independent")
