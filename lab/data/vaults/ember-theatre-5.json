@@ -1,0 +1,83 @@
+{
+  "case_id": "ember-theatre-5",
+  "version": "1.5.0",
+  "killer_id": "s_finn",
+  "motive": "Celeste approved a forged royalty contract and killed Rowe before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Celeste took the paralytic stage muscle relaxant using administrator override and injected Rowe beneath the ear with a syringe.",
+  "opportunity": "Celeste used the scheduled voltage dip and mechanical service key to enter the locked costume records through the service corridor while Amara was on a call.",
+  "true_timeline": [
+    "20:21 Celeste authenticated the disputed royalty contract approval from her office.",
+    "20:32 Celeste scheduled a load test to produce a voltage dip.",
+    "20:58 Celeste used her administrator role to open the stage muscle relaxant cabinet.",
+    "21:42:50 Amara stepped away for a call, leaving Celeste unobserved.",
+    "21:43:19 Celeste entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Celeste injected Rowe with paralytic stage muscle relaxant.",
+    "21:48:03 Celeste exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21",
+    "E25"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_gina": [
+      "E07"
+    ],
+    "s_hugo": [
+      "E10"
+    ],
+    "s_ada": [
+      "E23"
+    ],
+    "s_ben": [
+      "E27"
+    ],
+    "s_celia": [
+      "E29"
+    ],
+    "s_dev": [
+      "E25"
+    ],
+    "s_elin": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Royalty Contract signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Miles's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "royalty",
+      "forg"
+    ],
+    [
+      "stage",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

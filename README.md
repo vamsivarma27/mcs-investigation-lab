@@ -12,7 +12,7 @@ uv run python -m lab.validate_case
 MODEL_PROVIDER=mock uv run uvicorn lab.api:app --host 127.0.0.1 --port 8765
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765), then select **New investigation**. Mock mode is an explicitly labeled deterministic integration fixture. Its conclusions are not evidence of model capability.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765), then select **New investigation**. Choose a case, filter by difficulty, and assign two or three leads. Mock mode is an explicitly labeled deterministic integration fixture. Its conclusions are not evidence of model capability.
 
 ## Run real investigators
 
@@ -33,13 +33,13 @@ The default data store is `./lab.sqlite3`, outside Git. Delete that file only if
 
 ## What works
 
-- One hand-authored eight-suspect case with 32 evidence items, a separately stored answer vault, and a case linter.
+- A 61-case library across Beginner, Easy, Moderate, Hard, and Expert levels. Every case has eight suspects, 32 evidence items, and a separately stored answer vault.
 - Two or three lead investigators with bounded specialist creation and separate private evidence state.
 - Typed investigation tools; no agent file, shell, HTTP, browser, database, or vault capability.
 - Audited messages, findings, versioned hypotheses, independent accusations, deliberation, and final accusations.
 - Persisted event replay, hash chaining, checkpoints, tail anchor, and verification.
 - Post-finalization evaluation of culprit accuracy and six quality dimensions, plus observable wrong-theory drift.
-- Live local dashboard for swarm, activity, communications, discovered evidence, suspects, hypotheses, consensus, replay, evaluation, influence graph, integrity, and run comparison.
+- Live local dashboard with a case library, agent-versus-answer comparison, conversation summaries, swarm activity, evidence, hypotheses, consensus, replay, influence, integrity, and run comparison.
 - OpenRouter investigator adapter and optional Jev decision adapter behind one provider module.
 
 ## Architecture
@@ -89,7 +89,7 @@ node --check lab/static/app.js
 uv run python -m lab.validate_case
 ```
 
-Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. The command center opens the latest run and explains its progress with lifecycle, evidence coverage, tool usage, event composition, and per-agent charts. Use **Compare runs** to inspect completed runs on the same case. The HTTP API is documented at `/api/docs`. Useful local endpoints are `/api/health`, `/api/case`, `/api/runs`, `/api/compare`, `/api/runs/{run_id}`, and `/api/runs/{run_id}/report`.
+Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, case ID, difficulty, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. The command center explains progress with lifecycle, evidence coverage, tool usage, event composition, and per-agent charts. Evaluation places agent conclusions beside the canonical answer; Communications summarizes what agents discussed and whether their positions changed. Use **Compare runs** to inspect completed runs. The HTTP API is documented at `/api/docs`. Useful local endpoints are `/api/health`, `/api/cases`, `/api/runs`, `/api/compare`, `/api/runs/{run_id}`, and `/api/runs/{run_id}/report`.
 
 ## Current limits
 

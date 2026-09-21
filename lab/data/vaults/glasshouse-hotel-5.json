@@ -1,0 +1,83 @@
+{
+  "case_id": "glasshouse-hotel-5",
+  "version": "1.5.0",
+  "killer_id": "s_celia",
+  "motive": "Astrid approved a forged ownership transfer file and killed Snow before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Astrid took the paralytic botanical paralytic using administrator override and injected Snow beneath the ear with a syringe.",
+  "opportunity": "Astrid used the scheduled voltage dip and mechanical service key to enter the private wine salon through the service corridor while Leah was on a call.",
+  "true_timeline": [
+    "20:21 Astrid authenticated the disputed ownership transfer file approval from her office.",
+    "20:32 Astrid scheduled a load test to produce a voltage dip.",
+    "20:58 Astrid used her administrator role to open the botanical paralytic cabinet.",
+    "21:42:50 Leah stepped away for a call, leaving Astrid unobserved.",
+    "21:43:19 Astrid entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Astrid injected Snow with paralytic botanical paralytic.",
+    "21:48:03 Astrid exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21",
+    "E25"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_dev": [
+      "E07"
+    ],
+    "s_elin": [
+      "E10"
+    ],
+    "s_finn": [
+      "E23"
+    ],
+    "s_gina": [
+      "E27"
+    ],
+    "s_hugo": [
+      "E29"
+    ],
+    "s_ada": [
+      "E25"
+    ],
+    "s_ben": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Ownership Transfer File signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Peter's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "ownership",
+      "forg"
+    ],
+    [
+      "botanical",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

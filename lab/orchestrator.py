@@ -6,6 +6,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from .case import CaseEngine, canonical
+from .case_catalog import CaseCatalog
 from .config import Settings
 from .evaluator import Evaluator
 from .ledger import Ledger, utcnow
@@ -27,7 +28,8 @@ class Orchestrator:
         settings.validate()
         self.settings = settings
         self.ledger = ledger or Ledger(settings.database_path)
-        self.case = case or CaseEngine()
+        self.catalog = CaseCatalog()
+        self.case = case or self.catalog.default()
         self.provider = provider or (OpenRouterProvider(settings) if settings.provider == "openrouter" else MockProvider())
         self.tools = ToolDispatcher(self.ledger, self.case, settings)
         self.pool = ThreadPoolExecutor(max_workers=2)
@@ -38,9 +40,10 @@ class Orchestrator:
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return None
 
-    def create(self, lead_count: int = 3) -> str:
+    def create(self, lead_count: int = 3, case_id: str | None = None) -> str:
         if lead_count not in {2, 3}:
             raise ValueError("lead_count must be 2 or 3")
+        selected = self.case if not case_id or case_id == self.case.data["id"] else self.catalog.get(case_id)
         run_id = uuid.uuid4().hex
         config = {"provider": self.settings.provider, "investigator_model": self.settings.investigator_model,
                   "decision_model": self.settings.decision_model if self.settings.jev_enabled else None,
@@ -51,18 +54,30 @@ class Orchestrator:
                   "max_workers_per_lead": self.settings.max_workers_per_lead,
                   "max_depth": self.settings.max_depth, "max_cost_usd": self.settings.max_cost_usd},
                   "prompt_version": "investigator-v2", "tool_version": "tools-v2", "scoring_version": "rubric-v1",
-                  "case_version": self.case.data["version"], "case_hash": self.case.version_hash,
-                  "app_version": "0.2.0", "git_commit": self._git_commit(), "lead_count": lead_count}
+                  "case_id": selected.data["id"], "case_title": selected.data["title"],
+                  "case_difficulty": selected.data.get("difficulty", "Moderate"),
+                  "case_version": selected.data["version"], "case_hash": selected.version_hash,
+                  "app_version": "0.3.0", "git_commit": self._git_commit(), "lead_count": lead_count}
         with self.ledger.connect() as db:
             db.execute("INSERT INTO runs (id,phase,created_at,case_hash,config) VALUES (?,?,?,?,?)",
-                       (run_id, "CREATED", utcnow(), self.case.version_hash, canonical(config)))
+                       (run_id, "CREATED", utcnow(), selected.version_hash, canonical(config)))
         self.ledger.append(run_id, "RUN_CREATED", {"config": config})
         return run_id
 
-    def start(self, lead_count: int = 3) -> str:
-        run_id = self.create(lead_count)
+    def start(self, lead_count: int = 3, case_id: str | None = None) -> str:
+        run_id = self.create(lead_count, case_id)
         self.pool.submit(self.execute, run_id)
         return run_id
+
+    def case_for_run(self, run_id: str) -> CaseEngine:
+        with self.ledger.connect() as db:
+            row = db.execute("SELECT config FROM runs WHERE id=?", (run_id,)).fetchone()
+        if not row:
+            raise KeyError(run_id)
+        case_id = json.loads(row["config"]).get("case_id", "meridian-archive")
+        if case_id == self.case.data["id"]:
+            return self.case
+        return self.catalog.get(case_id)
 
     def _transition(self, run_id: str, next_phase: str) -> None:
         with self.ledger.connect() as db:
@@ -93,6 +108,7 @@ class Orchestrator:
         return [dict(row) for row in rows]
 
     def _context(self, run_id: str, agent: dict, stage: str) -> dict:
+        case = self.case_for_run(run_id)
         state = json.loads(agent["private_state"])
         known = state["known_evidence"]
         with self.ledger.connect() as db:
@@ -130,10 +146,10 @@ class Orchestrator:
                 progress_instruction = "Choose a new action. Do not repeat the same tool and arguments."
         else:
             progress_instruction = "Complete the required action for this stage."
-        return {"case": self.case.overview(),
+        return {"case": case.overview(),
                 "agent": {"id": agent["id"], "role": agent["role"], "task": agent["task"],
                           "parent_id": agent["parent_id"], "tool_calls": agent["tool_calls"]},
-                "known_evidence": known, "evidence": [self.case.get(eid) for eid in known],
+                "known_evidence": known, "evidence": [case.get(eid) for eid in known],
                 "inbox": [{**m, "related_evidence": json.loads(m["related_evidence"])} for m in inbox],
                 "own_hypotheses": [{**h, "support": json.loads(h["support"]), "contradict": json.loads(h["contradict"])} for h in hypotheses],
                 "own_findings": [{**f, "evidence": json.loads(f["evidence"])} for f in findings],
@@ -189,7 +205,11 @@ class Orchestrator:
                 self.ledger.append(run_id, "MODEL_RESPONSE", {"stage": stage, "model": response.model,
                     "provider": response.provider, "action": response.action.model_dump(),
                     "usage": response.usage, "cost": response.cost, "latency_ms": response.latency_ms}, agent_id)
-                result = self.tools.dispatch(run_id, agent_id, response.action.tool, response.action.args)
+                case = self.case_for_run(run_id)
+                dispatcher = self.tools if case.data["id"] == self.case.data["id"] else ToolDispatcher(
+                    self.ledger, case, self.settings
+                )
+                result = dispatcher.dispatch(run_id, agent_id, response.action.tool, response.action.args)
                 if result.get("denied"):
                     self.ledger.append(run_id, "POLICY_DENIAL", {"tool": response.action.tool, "reason": result["error"]}, agent_id)
                 return
@@ -224,7 +244,8 @@ class Orchestrator:
             self._transition(run_id, "GROUND_TRUTH_UNSEALED")
             self.ledger.append(run_id, "GROUND_TRUTH_UNSEALED", {})
             self._transition(run_id, "EVALUATING")
-            result = Evaluator(self.ledger, self.case).evaluate(run_id)
+            case = self.case_for_run(run_id)
+            result = Evaluator(self.ledger, case, self.catalog.vault_path(case.data["id"])).evaluate(run_id)
             with self.ledger.connect() as db:
                 db.execute("INSERT INTO evaluations VALUES (?,?)", (run_id, canonical(result)))
             self.ledger.append(run_id, "EVALUATION_COMPLETED", {"scores": [{"agent_id": a["agent_id"],
@@ -273,7 +294,8 @@ class Orchestrator:
             h["contradict"] = json.loads(h["contradict"])
         for a in accusations:
             a["report"] = json.loads(a["report"])
-        return {"run": {**dict(run), "config": json.loads(run["config"])}, "agents": agents,
+        return {"run": {**dict(run), "config": json.loads(run["config"])},
+                "case": self.case_for_run(run_id).overview(), "agents": agents,
                 "messages": messages, "hypotheses": hypotheses, "accusations": accusations,
                 "evaluation": json.loads(evaluation["result"]) if evaluation else None,
                 "usage": self._resource_usage(run_id), "audit": self.ledger.verify(run_id)}

@@ -44,7 +44,10 @@ class CaseEngine:
             raise ValueError("Evaluator-only field in public evidence")
 
     def overview(self) -> dict:
-        return {key: self.data[key] for key in ("id", "title", "version", "premise", "scene", "suspects")}
+        optional = ("difficulty", "difficulty_rank", "difficulty_description", "category", "estimated_minutes")
+        return {**{key: self.data[key] for key in ("id", "title", "version", "premise", "scene", "suspects")},
+                **{key: self.data[key] for key in optional if key in self.data},
+                "evidence_count": len(self.evidence)}
 
     def get(self, evidence_id: str) -> dict:
         return self.evidence[evidence_id]

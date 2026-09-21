@@ -1,0 +1,79 @@
+{
+  "case_id": "ember-theatre-1",
+  "version": "1.1.0",
+  "killer_id": "s_ben",
+  "motive": "Celeste approved a forged royalty contract and killed Rowe before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Celeste took the paralytic stage muscle relaxant using administrator override and injected Rowe beneath the ear with a syringe.",
+  "opportunity": "Celeste used the scheduled voltage dip and mechanical service key to enter the locked costume records through the service corridor while Amara was on a call.",
+  "true_timeline": [
+    "20:21 Celeste authenticated the disputed royalty contract approval from her office.",
+    "20:32 Celeste scheduled a load test to produce a voltage dip.",
+    "20:58 Celeste used her administrator role to open the stage muscle relaxant cabinet.",
+    "21:42:50 Amara stepped away for a call, leaving Celeste unobserved.",
+    "21:43:19 Celeste entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Celeste injected Rowe with paralytic stage muscle relaxant.",
+    "21:48:03 Celeste exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_celia": [
+      "E07"
+    ],
+    "s_dev": [
+      "E10"
+    ],
+    "s_elin": [
+      "E23"
+    ],
+    "s_finn": [
+      "E27"
+    ],
+    "s_gina": [
+      "E29"
+    ],
+    "s_hugo": [
+      "E25"
+    ],
+    "s_ada": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Royalty Contract signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Miles's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "royalty",
+      "forg"
+    ],
+    [
+      "stage",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

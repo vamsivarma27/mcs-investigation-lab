@@ -40,6 +40,7 @@ def build_run_report(ledger: Ledger, case: CaseEngine, run_id: str) -> dict:
             "SELECT * FROM hypotheses WHERE run_id=? ORDER BY event_sequence", (run_id,)
         )]
         accusations = [dict(row) for row in db.execute("SELECT * FROM accusations WHERE run_id=?", (run_id,))]
+        evaluation_row = db.execute("SELECT result FROM evaluations WHERE run_id=?", (run_id,)).fetchone()
     run = dict(run_row)
     events = ledger.events(run_id)
     counts = Counter(event["event_type"] for event in events)
@@ -79,6 +80,7 @@ def build_run_report(ledger: Ledger, case: CaseEngine, run_id: str) -> dict:
         phase_rows[failed_index]["status"] = "failed"
 
     agent_progress = []
+    agent_names = {agent["id"]: agent["role"] for agent in agents}
     for agent in agents:
         aid = agent["id"]
         requests = [event for event in events if event["agent_id"] == aid and event["event_type"] == "TOOL_REQUEST"]
@@ -107,6 +109,43 @@ def build_run_report(ledger: Ledger, case: CaseEngine, run_id: str) -> dict:
         "Belief updates": counts["HYPOTHESIS_CREATED"] + counts["HYPOTHESIS_CHANGED"] + counts["FINAL_ACCUSATION"],
         "Errors and denials": counts["MODEL_ERROR"] + counts["TOOL_DENIED"] + counts["POLICY_DENIAL"] + counts["RUN_FAILED"],
     }
+
+    message_types = Counter(message["type"] for message in messages)
+    shared_evidence = sorted({eid for message in messages for eid in json.loads(message["related_evidence"])})
+    mentioned_suspects = [suspect["name"] for suspect in case.data["suspects"]
+                          if any(suspect["name"].lower() in message["content"].lower() for message in messages)]
+    topic_tags = Counter(tag for eid in shared_evidence for tag in case.get(eid)["tags"])
+    top_topics = [tag for tag, _ in topic_tags.most_common(5)]
+    conversation = [{
+        "id": message["id"], "sender": agent_names.get(message["sender"], message["sender"][:8]),
+        "recipient": agent_names.get(message["recipient"], message["recipient"][:8]),
+        "type": message["type"], "content": message["content"],
+        "related_evidence": json.loads(message["related_evidence"]), "created_at": message["created_at"],
+    } for message in messages]
+    if messages:
+        type_summary = ", ".join(
+            f"{count} {kind.replace('_', ' ')}" for kind, count in message_types.most_common()
+        )
+        suspect_summary = ", ".join(mentioned_suspects[:3]) or "the leading suspects"
+        topic_summary = ", ".join(top_topics) or "the available evidence"
+        communication_overview = (
+            f"The team exchanged {len(messages)} messages: {type_summary}. They focused on {suspect_summary} "
+            f"and discussed {topic_summary}, referencing {len(shared_evidence)} unique evidence items."
+        )
+    else:
+        communication_overview = "The agents did not communicate during this run."
+    influence = []
+    if evaluation_row:
+        evaluation = json.loads(evaluation_row["result"])
+        for item in evaluation.get("agents", []):
+            before, final = item.get("independent"), item.get("final")
+            influence.append({
+                "role": item["role"], "changed_suspect": item.get("changed_after_deliberation", False),
+                "before_suspect": before.get("suspect_id") if before else None,
+                "final_suspect": final.get("suspect_id") if final else None,
+                "confidence_change": item.get("confidence_change"),
+                "declared_message_count": len(item.get("declared_influence_message_ids", [])),
+            })
 
     if run["phase"] == "COMPLETED":
         headline = "Investigation completed"
@@ -165,6 +204,14 @@ def build_run_report(ledger: Ledger, case: CaseEngine, run_id: str) -> dict:
             "audit_events": len(events), "audit_valid": integrity["valid"], **usage,
         },
         "phases": phase_rows, "agent_progress": agent_progress,
+        "communication_summary": {
+            "overview": communication_overview,
+            "message_count": len(messages), "shared_evidence": shared_evidence,
+            "mentioned_suspects": mentioned_suspects, "topics": top_topics,
+            "by_type": [{"label": kind.replace("_", " "), "value": count}
+                        for kind, count in message_types.most_common()],
+            "conversation": conversation, "influence": influence,
+        },
         "charts": {
             "tool_usage": [{"label": name, "value": value} for name, value in tool_usage.most_common()],
             "event_groups": [{"label": name, "value": value} for name, value in event_groups.items()],

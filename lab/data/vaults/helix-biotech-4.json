@@ -1,0 +1,82 @@
+{
+  "case_id": "helix-biotech-4",
+  "version": "1.4.0",
+  "killer_id": "s_gina",
+  "motive": "Priya approved a forged trial authorization packet and killed Wynn before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Priya took the paralytic neuromuscular compound using administrator override and injected Wynn beneath the ear with a syringe.",
+  "opportunity": "Priya used the scheduled voltage dip and mechanical service key to enter the genomics clean room through the service corridor while Elena was on a call.",
+  "true_timeline": [
+    "20:21 Priya authenticated the disputed trial authorization packet approval from her office.",
+    "20:32 Priya scheduled a load test to produce a voltage dip.",
+    "20:58 Priya used her administrator role to open the neuromuscular compound cabinet.",
+    "21:42:50 Elena stepped away for a call, leaving Priya unobserved.",
+    "21:43:19 Priya entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Priya injected Wynn with paralytic neuromuscular compound.",
+    "21:48:03 Priya exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_hugo": [
+      "E07"
+    ],
+    "s_ada": [
+      "E10"
+    ],
+    "s_ben": [
+      "E23"
+    ],
+    "s_celia": [
+      "E27"
+    ],
+    "s_dev": [
+      "E29"
+    ],
+    "s_elin": [
+      "E25"
+    ],
+    "s_finn": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Trial Authorization Packet signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Noah's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "trial",
+      "forg"
+    ],
+    [
+      "neuromuscular",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

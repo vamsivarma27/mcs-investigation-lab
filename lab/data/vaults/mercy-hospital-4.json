@@ -1,0 +1,82 @@
+{
+  "case_id": "mercy-hospital-4",
+  "version": "1.4.0",
+  "killer_id": "s_dev",
+  "motive": "Anika approved a forged adverse-event report and killed Hale before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Anika took the paralytic surgical paralytic using administrator override and injected Hale beneath the ear with a syringe.",
+  "opportunity": "Anika used the scheduled voltage dip and mechanical service key to enter the restricted records suite through the service corridor while Chloe was on a call.",
+  "true_timeline": [
+    "20:21 Anika authenticated the disputed adverse-event report approval from her office.",
+    "20:32 Anika scheduled a load test to produce a voltage dip.",
+    "20:58 Anika used her administrator role to open the surgical paralytic cabinet.",
+    "21:42:50 Chloe stepped away for a call, leaving Anika unobserved.",
+    "21:43:19 Anika entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Anika injected Hale with paralytic surgical paralytic.",
+    "21:48:03 Anika exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_elin": [
+      "E07"
+    ],
+    "s_finn": [
+      "E10"
+    ],
+    "s_gina": [
+      "E23"
+    ],
+    "s_hugo": [
+      "E27"
+    ],
+    "s_ada": [
+      "E29"
+    ],
+    "s_ben": [
+      "E25"
+    ],
+    "s_celia": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Adverse-Event Report signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Farah's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "adverse-event",
+      "forg"
+    ],
+    [
+      "surgical",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

@@ -26,6 +26,18 @@ def test_case_public_has_no_answer_and_is_consistent():
     assert case.version_hash
 
 
+def test_case_catalog_has_more_than_fifty_sealed_cases():
+    from lab.case_catalog import CaseCatalog
+    from lab.validate_case import validate
+
+    catalog = CaseCatalog()
+    cases = catalog.list()
+    assert len(cases) == 61
+    assert {case["difficulty"] for case in cases} == {"Beginner", "Easy", "Moderate", "Hard", "Expert"}
+    assert all(case["evidence_count"] == 32 and case["suspect_count"] == 8 for case in cases)
+    assert validate()["valid"]
+
+
 def test_vault_stays_sealed_and_cross_run_access_denied(lab):
     first = lab.create()
     second = lab.create()
@@ -94,6 +106,16 @@ def test_full_offline_run_persists_evaluates_and_replays(lab):
     assert report["charts"]["tool_usage"]
     # Fresh process-like reader reconstructs the same ordered history.
     assert len(Ledger(lab.settings.database_path).events(run)) == len(events)
+
+
+def test_nondefault_case_is_bound_to_run_and_evaluated(lab):
+    run = lab.create(lead_count=2, case_id="aurora-observatory-1")
+    lab.execute(run)
+    state = lab.snapshot(run)
+    assert state["run"]["phase"] == "COMPLETED"
+    assert state["run"]["config"]["case_id"] == "aurora-observatory-1"
+    assert state["case"]["difficulty"] == "Beginner"
+    assert state["evaluation"]["canonical"]["true_timeline"]
 
 
 def test_hash_chain_detects_modification_and_deletion(lab):

@@ -44,12 +44,14 @@ class Evaluator:
             deductions.append({"dimension": "evidence", "earned": evidence_score, "possible": 20,
                                "reason": f"Cited {len(cited & required)} of {len(required)} decisive evidence items",
                                "missed": sorted(required - cited)})
-            timeline_terms = ["21:43", "21:45", "21:48"]
+            timeline_terms = vault.get("timeline_markers", ["21:43", "21:45", "21:48"])
             timeline_score = round(10 * sum(term in report["timeline"] for term in timeline_terms) / 3, 1)
             deductions.append({"dimension": "timeline", "earned": timeline_score, "possible": 10,
                                "reason": "Awarded for correctly placed entry, injection, and exit times"})
             mmo = [report["motive"], report["means"], report["opportunity"]]
-            expected = [("folio", "forg"), ("paralytic", "inject"), ("corridor", "voltage", "blackout")]
+            expected = vault.get("mmo_keywords", [
+                ["folio", "forg"], ["paralytic", "inject"], ["corridor", "voltage", "blackout"]
+            ])
             mmo_score = round(10 * sum(any(term in text.lower() for term in terms) for text, terms in zip(mmo, expected)) / 3, 1)
             deductions.append({"dimension": "motive_means_opportunity", "earned": mmo_score, "possible": 10,
                                "reason": "Awarded for explaining motive, means, and opportunity"})

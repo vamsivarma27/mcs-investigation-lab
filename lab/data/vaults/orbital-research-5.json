@@ -1,0 +1,83 @@
+{
+  "case_id": "orbital-research-5",
+  "version": "1.5.0",
+  "killer_id": "s_dev",
+  "motive": "Aiko approved a forged launch certification file and killed Ito before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Aiko took the paralytic aerospace paralytic using administrator override and injected Ito beneath the ear with a syringe.",
+  "opportunity": "Aiko used the scheduled voltage dip and mechanical service key to enter the satellite command bay through the service corridor while Celia was on a call.",
+  "true_timeline": [
+    "20:21 Aiko authenticated the disputed launch certification file approval from her office.",
+    "20:32 Aiko scheduled a load test to produce a voltage dip.",
+    "20:58 Aiko used her administrator role to open the aerospace paralytic cabinet.",
+    "21:42:50 Celia stepped away for a call, leaving Aiko unobserved.",
+    "21:43:19 Aiko entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Aiko injected Ito with paralytic aerospace paralytic.",
+    "21:48:03 Aiko exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21",
+    "E25"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_elin": [
+      "E07"
+    ],
+    "s_finn": [
+      "E10"
+    ],
+    "s_gina": [
+      "E23"
+    ],
+    "s_hugo": [
+      "E27"
+    ],
+    "s_ada": [
+      "E29"
+    ],
+    "s_ben": [
+      "E25"
+    ],
+    "s_celia": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Launch Certification File signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Finn's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "launch",
+      "forg"
+    ],
+    [
+      "aerospace",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

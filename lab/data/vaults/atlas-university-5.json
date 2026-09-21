@@ -1,0 +1,83 @@
+{
+  "case_id": "atlas-university-5",
+  "version": "1.5.0",
+  "killer_id": "s_hugo",
+  "motive": "Amelia approved a forged grant review grant review folio and killed Stone before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Amelia took the paralytic laboratory paralytic using administrator override and injected Stone beneath the ear with a syringe.",
+  "opportunity": "Amelia used the scheduled voltage dip and mechanical service key to enter the rare manuscripts laboratory through the service corridor while Carmen was on a call.",
+  "true_timeline": [
+    "20:21 Amelia authenticated the disputed grant review folio approval from her office.",
+    "20:32 Amelia scheduled a load test to produce a voltage dip.",
+    "20:58 Amelia used her administrator role to open the laboratory paralytic cabinet.",
+    "21:42:50 Carmen stepped away for a call, leaving Amelia unobserved.",
+    "21:43:19 Amelia entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Amelia injected Stone with paralytic laboratory paralytic.",
+    "21:48:03 Amelia exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21",
+    "E25"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_ada": [
+      "E07"
+    ],
+    "s_ben": [
+      "E10"
+    ],
+    "s_celia": [
+      "E23"
+    ],
+    "s_dev": [
+      "E27"
+    ],
+    "s_elin": [
+      "E29"
+    ],
+    "s_finn": [
+      "E25"
+    ],
+    "s_gina": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Grant Review Folio signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Frederick's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "grant",
+      "forg"
+    ],
+    [
+      "laboratory",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

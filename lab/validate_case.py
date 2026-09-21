@@ -3,12 +3,22 @@ from __future__ import annotations
 
 import json
 
-from .case import DATA, CaseEngine, canonical
+from .case import CaseEngine, canonical
+from .case_catalog import CaseCatalog
 
 
 def validate() -> dict:
-    case = CaseEngine()
-    vault = json.loads((DATA / "case_vault.json").read_text())
+    catalog = CaseCatalog()
+    case_results = [_validate_case(catalog.get(row["id"]), catalog.vault_path(row["id"]))
+                    for row in catalog.list()]
+    errors = [f"{result['case_id']}: {error}" for result in case_results for error in result["errors"]]
+    return {"valid": not errors, "errors": errors, "case_count": len(case_results),
+            "suspects": sum(result["suspects"] for result in case_results),
+            "evidence": sum(result["evidence"] for result in case_results)}
+
+
+def _validate_case(case: CaseEngine, vault_path) -> dict:
+    vault = json.loads(vault_path.read_text())
     errors = []
     if vault["case_id"] != case.data["id"] or vault["version"] != case.data["version"]:
         errors.append("Vault and public case version mismatch")
@@ -40,7 +50,7 @@ def validate() -> dict:
                         "E12": "21:45", "E17": "21:48", "E21": "20:21", "E25": "20:32"}.items():
         if marker not in case.get(eid)["text"]:
             errors.append(f"Timeline marker missing from {eid}")
-    return {"valid": not errors, "errors": errors, "case_hash": case.version_hash,
+    return {"valid": not errors, "errors": errors, "case_id": case.data["id"], "case_hash": case.version_hash,
             "suspects": len(case.suspects), "evidence": len(case.evidence)}
 
 

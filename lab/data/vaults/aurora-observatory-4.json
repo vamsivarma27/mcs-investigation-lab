@@ -1,0 +1,82 @@
+{
+  "case_id": "aurora-observatory-4",
+  "version": "1.4.0",
+  "killer_id": "s_dev",
+  "motive": "Mara approved a forged meteorite provenance file and killed Frost before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Mara took the paralytic cryogenic paralytic using administrator override and injected Frost beneath the ear with a syringe.",
+  "opportunity": "Mara used the scheduled voltage dip and mechanical service key to enter the telescope control room through the service corridor while Iris was on a call.",
+  "true_timeline": [
+    "20:21 Mara authenticated the disputed meteorite provenance file approval from her office.",
+    "20:32 Mara scheduled a load test to produce a voltage dip.",
+    "20:58 Mara used her administrator role to open the cryogenic paralytic cabinet.",
+    "21:42:50 Iris stepped away for a call, leaving Mara unobserved.",
+    "21:43:19 Mara entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Mara injected Frost with paralytic cryogenic paralytic.",
+    "21:48:03 Mara exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_elin": [
+      "E07"
+    ],
+    "s_finn": [
+      "E10"
+    ],
+    "s_gina": [
+      "E23"
+    ],
+    "s_hugo": [
+      "E27"
+    ],
+    "s_ada": [
+      "E29"
+    ],
+    "s_ben": [
+      "E25"
+    ],
+    "s_celia": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Meteorite Provenance File signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Felix's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "meteorite",
+      "forg"
+    ],
+    [
+      "cryogenic",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "case_id": "vesper-museum-1",
+  "version": "1.1.0",
+  "killer_id": "s_elin",
+  "motive": "Lydia approved a forged provenance dossier and killed Reed before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Lydia took the paralytic conservation neurotoxin using administrator override and injected Reed beneath the ear with a syringe.",
+  "opportunity": "Lydia used the scheduled voltage dip and mechanical service key to enter the restoration gallery through the service corridor while Cora was on a call.",
+  "true_timeline": [
+    "20:21 Lydia authenticated the disputed provenance dossier approval from her office.",
+    "20:32 Lydia scheduled a load test to produce a voltage dip.",
+    "20:58 Lydia used her administrator role to open the conservation neurotoxin cabinet.",
+    "21:42:50 Cora stepped away for a call, leaving Lydia unobserved.",
+    "21:43:19 Lydia entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Lydia injected Reed with paralytic conservation neurotoxin.",
+    "21:48:03 Lydia exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_finn": [
+      "E07"
+    ],
+    "s_gina": [
+      "E10"
+    ],
+    "s_hugo": [
+      "E23"
+    ],
+    "s_ada": [
+      "E27"
+    ],
+    "s_ben": [
+      "E29"
+    ],
+    "s_celia": [
+      "E25"
+    ],
+    "s_dev": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Provenance Dossier signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Graham's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "provenance",
+      "forg"
+    ],
+    [
+      "conservation",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}

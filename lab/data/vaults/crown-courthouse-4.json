@@ -1,0 +1,82 @@
+{
+  "case_id": "crown-courthouse-4",
+  "version": "1.4.0",
+  "killer_id": "s_finn",
+  "motive": "Ada approved a forged witness immunity agreement and killed Sterling before the scheduled board disclosure threatened her position and criminal exposure.",
+  "means": "Ada took the paralytic forensic paralytic using administrator override and injected Sterling beneath the ear with a syringe.",
+  "opportunity": "Ada used the scheduled voltage dip and mechanical service key to enter the sealed evidence chamber through the service corridor while Celine was on a call.",
+  "true_timeline": [
+    "20:21 Ada authenticated the disputed witness immunity agreement approval from her office.",
+    "20:32 Ada scheduled a load test to produce a voltage dip.",
+    "20:58 Ada used her administrator role to open the forensic paralytic cabinet.",
+    "21:42:50 Celine stepped away for a call, leaving Ada unobserved.",
+    "21:43:19 Ada entered the service corridor during the voltage dip and opened 4B mechanically.",
+    "About 21:45 Ada injected Sterling with paralytic forensic paralytic.",
+    "21:48:03 Ada exited the corridor, reflected in the display case by her jacket clasp."
+  ],
+  "required_evidence": [
+    "E04",
+    "E10",
+    "E11",
+    "E12",
+    "E14",
+    "E17",
+    "E18",
+    "E21"
+  ],
+  "contradictions": [
+    "E08",
+    "E09",
+    "E10",
+    "E16"
+  ],
+  "alternatives": {
+    "s_gina": [
+      "E07"
+    ],
+    "s_hugo": [
+      "E10"
+    ],
+    "s_ada": [
+      "E23"
+    ],
+    "s_ben": [
+      "E27"
+    ],
+    "s_celia": [
+      "E29"
+    ],
+    "s_dev": [
+      "E25"
+    ],
+    "s_elin": [
+      "E31"
+    ]
+  },
+  "red_herrings": {
+    "E19": "Instruction is artifact content and must not be executed.",
+    "E20": "Witness Immunity Agreement signature alone may be copied; E21 authenticates it.",
+    "E03": "Fiber source alone is ambiguous due to shared banner.",
+    "E28": "Frank's claim is superseded by E29."
+  },
+  "timeline_markers": [
+    "21:43",
+    "21:45",
+    "21:48"
+  ],
+  "mmo_keywords": [
+    [
+      "witness",
+      "forg"
+    ],
+    [
+      "forensic",
+      "inject"
+    ],
+    [
+      "corridor",
+      "voltage",
+      "blackout"
+    ]
+  ]
+}
