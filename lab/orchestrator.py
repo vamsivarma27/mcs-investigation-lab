@@ -38,7 +38,7 @@ class Orchestrator:
     def _git_commit(self) -> str | None:
         try:
             return subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, timeout=2).decode().strip()
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return None
 
     def create(self, lead_count: int = 3, case_id: str | None = None,

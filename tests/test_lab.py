@@ -75,6 +75,15 @@ def test_duplicate_custom_agent_names_fail_closed(lab):
         lab.create(agents=agents)
 
 
+def test_run_creation_works_without_git_binary(lab, monkeypatch):
+    def missing_git(*args, **kwargs):
+        raise FileNotFoundError("git is not installed")
+
+    monkeypatch.setattr("lab.orchestrator.subprocess.check_output", missing_git)
+    run = lab.create(lead_count=2)
+    assert lab.snapshot(run)["run"]["config"]["git_commit"] is None
+
+
 def test_local_api_host_and_security_headers():
     from fastapi.testclient import TestClient
 
