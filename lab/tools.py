@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from .agents import COMMUNICATION_TOOLS, SKILLS, allowed_tools
 from .case import CaseEngine, canonical
 from .config import Settings
 from .ledger import Ledger, utcnow
@@ -173,6 +174,13 @@ class ToolDispatcher:
                 raise PolicyError("Investigation is not active")
             if tool not in SCHEMAS:
                 raise PolicyError("Unknown tool")
+            profile = agent["private_state"].get("profile")
+            skills = profile.get("skills", []) if profile else list(SKILLS)
+            permitted = allowed_tools(skills)
+            if phase == "DELIBERATION":
+                permitted.update(COMMUNICATION_TOOLS)
+            if tool not in permitted:
+                raise PolicyError("Tool is not granted by this agent's skills")
             if agent["status"] != "active":
                 raise PolicyError("Agent is not active")
             if agent["tool_calls"] >= self.settings.max_tools_per_agent:
@@ -326,9 +334,11 @@ class ToolDispatcher:
             if duplicate:
                 raise PolicyError("Duplicate worker specialization")
             worker_id = uuid.uuid4().hex
+            parent_state = agent["private_state"]
+            worker_state = {"known_evidence": [], "profile": parent_state.get("profile", {})}
             db.execute("INSERT INTO agents VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                        (worker_id, run_id, agent["id"], agent["lead_id"], f"worker:{args.specialization}", args.task,
-                        agent["depth"] + 1, "active", canonical({"known_evidence": []}), agent["model"], utcnow(), None, 0))
+                        agent["depth"] + 1, "active", canonical(worker_state), agent["model"], utcnow(), None, 0))
         self.ledger.append(run_id, "WORKER_REQUESTED", args.model_dump(), agent["id"])
         self.ledger.append(run_id, "WORKER_CREATED", {"worker_id": worker_id, "parent_id": agent["id"],
                                                        "specialization": args.specialization}, agent["id"])

@@ -1,0 +1,17 @@
+services:
+  mcs:
+    build: .
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      MODEL_PROVIDER: ${MODEL_PROVIDER:-mock}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      INVESTIGATOR_MODEL: ${INVESTIGATOR_MODEL:-google/gemini-3-flash-preview}
+      JEV_ENABLED: ${JEV_ENABLED:-false}
+      MAX_COST_USD: ${MAX_COST_USD:-5}
+    volumes:
+      - mcs-data:/data
+    restart: unless-stopped
+
+volumes:
+  mcs-data:

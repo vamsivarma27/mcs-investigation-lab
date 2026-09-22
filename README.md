@@ -1,96 +1,256 @@
 # MCS Investigation Lab
 
-A local research platform for observing how independent AI investigators gather evidence, communicate, revise beliefs, and reach accusations in a controlled murder case. The project records the path to a conclusion, including incorrect paths, rather than treating a correct answer as the whole outcome.
+[![CI](https://github.com/vamsivarma27/mcs-investigation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/vamsivarma27/mcs-investigation-lab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-c4e878.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-80d4df.svg)](pyproject.toml)
 
-## Start locally
+An open source laboratory for building custom AI agent teams, assigning controlled skills, and
+observing how they investigate, communicate, change their beliefs, and reach a final answer.
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+MCS includes a visual **Agent Studio**, 61 sealed investigation cases, typed tool permissions,
+complete event replay, agent-to-agent communication analysis, tamper-evident audit logs, and an
+agent-versus-answer evaluation screen.
+
+> **Project status:** research preview. Run it locally. The default server has no user accounts or
+> production multi-tenant isolation.
+
+## What you can do
+
+- Choose one of five built-in agent templates or customize an agent's name and mission.
+- Assign skills such as forensics, interviews, records research, timeline analysis, teamwork, and
+  bounded delegation.
+- Give each agent a different OpenRouter model while keeping one shared provider credential on the
+  server.
+- Run teams of two or three agents on 61 cases from Beginner through Expert.
+- Watch evidence discovery, hypotheses, tool calls, delegation, messages, and conclusions live.
+- Read a plain-language summary of what agents discussed and whether it changed their positions.
+- Compare each agent's final report with the sealed correct answer after the run is finalized.
+- Replay and verify the complete append-only event chain.
+- Add agent templates, skills, providers, cases, and evaluation views through documented extension
+  points.
+
+## Quick start
+
+Requirements: Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
+git clone https://github.com/vamsivarma27/mcs-investigation-lab.git
+cd mcs-investigation-lab
 uv sync --extra dev
 uv run python -m lab.validate_case
 MODEL_PROVIDER=mock uv run uvicorn lab.api:app --host 127.0.0.1 --port 8765
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765), then select **New investigation**. Choose a case, filter by difficulty, and assign two or three leads. Mock mode is an explicitly labeled deterministic integration fixture. Its conclusions are not evidence of model capability.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Mock mode is an offline,
+deterministic integration fixture. It validates the full product flow without spending model
+credits and should not be used to claim model performance.
 
-## Run real investigators
-
-Copy `.env.example` to `.env`, fill in an OpenRouter API key, and load it into your shell before starting the server:
+## Run real agents
 
 ```bash
+cp .env.example .env
+# Edit .env and add your own OPENROUTER_API_KEY.
 set -a
 source .env
 set +a
 ./scripts/start-local.sh
 ```
 
-Set `MODEL_PROVIDER=openrouter`, `OPENROUTER_API_KEY`, `INVESTIGATOR_MODEL`, and optionally `JEV_ENABLED=true` with `DECISION_MODEL=~typesafe/jev-latest`. The key remains server-side and `.env` is ignored by Git. The investigator model must support tool calling. The default model string is an example, so verify availability in your OpenRouter account. The provider adapter has contract tests and was smoke tested with OpenRouter's free tier; paid-model and Jev behavior still require account credits.
+Use a dedicated OpenRouter key with a provider-side spending limit. The key stays on the server;
+it is never returned by the API or sent to the browser. `.env` and local SQLite files are ignored
+by Git.
 
-OpenRouter requires purchased credits for paid models and Jev. A key-level spending limit is not a credit balance. For a no-credit smoke test, use an explicit tool-capable free model such as `nex-agi/nex-n2.5-mini:free` and set `JEV_ENABLED=false`; free models may be rate limited or less reliable. Avoid the rotating `openrouter/free` alias for reproducible experiments because its underlying model can change between calls.
+The selected investigator models must support tool calling. OpenRouter model availability and
+pricing can change, so verify model IDs in your own account. `MAX_COST_USD` stops new turns based
+on provider-reported cost, but incomplete provider usage data can make that value approximate.
 
-The default data store is `./lab.sqlite3`, outside Git. Delete that file only if you intentionally want to erase local experiments. A run is immutable through the application after finalization.
+## Docker
 
-## What works
+Mock mode works without a credential:
 
-- A 61-case library across Beginner, Easy, Moderate, Hard, and Expert levels. Every case has eight suspects, 32 evidence items, and a separately stored answer vault.
-- Two or three lead investigators with bounded specialist creation and separate private evidence state.
-- Typed investigation tools; no agent file, shell, HTTP, browser, database, or vault capability.
-- Audited messages, findings, versioned hypotheses, independent accusations, deliberation, and final accusations.
-- Persisted event replay, hash chaining, checkpoints, tail anchor, and verification.
-- Post-finalization evaluation of culprit accuracy and six quality dimensions, plus observable wrong-theory drift.
-- Live local dashboard with a case library, agent-versus-answer comparison, conversation summaries, swarm activity, evidence, hypotheses, consensus, replay, influence, integrity, and run comparison.
-- OpenRouter investigator adapter and optional Jev decision adapter behind one provider module.
+```bash
+docker compose up --build
+```
 
-## Architecture
+For live models, put the variables from `.env.example` in a local `.env` first. Compose binds the
+app to `127.0.0.1:8765` and stores the database in a named volume.
+
+## Build a custom agent team
+
+1. Open **Case library** and choose **Customize agent team**, or open **Agent studio** directly.
+2. Select two or three templates.
+3. Edit each display name and mission.
+4. Assign skills and optionally override the model for an agent.
+5. Launch the team and follow the Command center, Communications, and Evaluation views.
+
+Built-in templates are Lead Detective, Forensic Analyst, Timeline Analyst, Interview Specialist,
+and Skeptical Reviewer. A custom mission changes the agent's goal. A skill changes only the fixed
+set of typed tools that the server may expose to that agent.
+
+“Bring your own agent” currently means submitting a validated agent manifest and optional model
+choice through the UI or API. Arbitrary third-party agent executables and remote agent protocols
+are not connected to this preview.
+
+### Agent manifest API
+
+Custom teams can also be submitted to `POST /api/runs`:
+
+```json
+{
+  "case_id": "aurora-observatory-1",
+  "agents": [
+    {
+      "template_id": "forensic-analyst",
+      "name": "Trace",
+      "mission": "Establish means and identity through physical evidence.",
+      "model": "google/gemini-3-flash-preview",
+      "skills": ["scene-analysis", "forensics", "teamwork"]
+    },
+    {
+      "template_id": "skeptical-reviewer",
+      "name": "Doubt",
+      "mission": "Challenge the leading theory and test viable alternatives.",
+      "skills": ["records-research", "timeline-analysis", "teamwork"]
+    }
+  ]
+}
+```
+
+See [Custom agents and skills](docs/CUSTOM_AGENTS.md) for the complete contract. The current
+template and skill catalog is available from `GET /api/agent-catalog`.
+
+## How the safety boundary works
 
 ```mermaid
 flowchart LR
-  UI[Local dashboard] --> API[FastAPI control plane]
-  API --> O[Orchestrator]
-  O --> P[Deterministic policy and typed tools]
-  P --> C[Public case engine]
-  O --> M[Model provider adapter]
-  M --> OR[OpenRouter]
-  O --> L[(Run state and audit ledger)]
+  U[Agent Studio or API manifest] --> V[Manifest validation]
+  V --> O[Run orchestrator]
+  O --> A1[Agent A private state]
+  O --> A2[Agent B private state]
+  A1 --> P[Lifecycle and skill policy]
+  A2 --> P
+  P --> T[Typed investigation tools]
+  T --> C[Public case engine]
+  A1 <-->|Audited messages only| A2
+  O --> L[(Hash chained event ledger)]
   O --> F[Finalize]
   F --> E[Evaluator]
-  E --> V[(Sealed answer vault)]
-  E --> L
+  E --> S[(Sealed answer vault)]
 ```
 
-SQLite was chosen instead of MongoDB for a zero-service local research environment with transactional storage and easy reproducibility. The database and answer vault are separate files. Investigators never receive direct database or file access. See [architecture](docs/ARCHITECTURE.md), [threat model](docs/SECURITY.md), [agent protocol](docs/PROTOCOL.md), and [evaluation methodology](docs/EVALUATION.md).
+Agent names, missions, evidence, and messages are untrusted text. They cannot grant capabilities.
+The dispatcher validates every tool name and argument, run ownership, lifecycle phase, role,
+known-evidence scope, recipient, duplicate read, and resource budget. Agents have no generic shell,
+filesystem, browser, database, HTTP, secret, or answer-vault tool.
+
+The sealed answer is loaded by the evaluator only after all final reports are locked. The local
+process can still read both public cases and vault files, so production deployments should place
+the vault and evaluator behind a separate service identity.
+
+Read [the threat model](docs/SECURITY.md) and [the security policy](SECURITY.md) before deploying or
+adding a capability.
+
+## Architecture
+
+| Layer | Responsibility |
+| --- | --- |
+| FastAPI control plane | Validates manifests, starts runs, and serves read-only observations |
+| Orchestrator | Owns lifecycle transitions, budgets, agent context, and finalization |
+| Agent catalog | Resolves templates and maps skills to controlled tools |
+| Provider adapter | Converts private agent context into one structured tool call |
+| Tool dispatcher | Applies deterministic authorization and schema validation |
+| Case engine | Reveals public evidence through investigation actions |
+| SQLite ledger | Stores run state plus an ordered SHA-256 event chain |
+| Evaluator | Opens the case vault after finalization and scores reports |
+| Browser dashboard | Explains activity, communication, influence, and correctness |
+
+SQLite keeps local setup small and reproducible. Each run records the case ID and hash, agent
+manifests, models, prompt/tool/scoring versions, Git commit, events, token metadata, and reported
+cost.
+
+More detail: [architecture](docs/ARCHITECTURE.md), [agent protocol](docs/PROTOCOL.md), and
+[evaluation methodology](docs/EVALUATION.md).
 
 ## Configuration
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `MODEL_PROVIDER` | `mock` fixture or `openrouter` real inference | `mock` |
+| `MODEL_PROVIDER` | `mock` fixture or `openrouter` live inference | `mock` |
 | `OPENROUTER_API_KEY` | Server-only OpenRouter credential | empty |
-| `INVESTIGATOR_MODEL` | OpenRouter tool-calling model | `google/gemini-3-flash-preview` |
-| `DECISION_MODEL` | Jev decision model | `~typesafe/jev-latest` |
-| `JEV_ENABLED` | Ask Jev for advisory next-action choices | `false` |
+| `INVESTIGATOR_MODEL` | Default model for agents without an override | `google/gemini-3-flash-preview` |
+| `DECISION_MODEL` | Optional Jev decision model | `~typesafe/jev-latest` |
+| `JEV_ENABLED` | Request advisory Jev next-action choices | `false` |
 | `DATABASE_PATH` | Local SQLite data path | `./lab.sqlite3` |
-| `MAX_MODEL_CALLS` | Per-run inference-request cap | `90` |
-| `MAX_TOOL_CALLS_PER_AGENT` | Per-agent action cap | `24` |
-| `MAX_TOTAL_AGENTS` | Per-run agent cap | `9` |
-| `MAX_WORKERS_PER_LEAD` | Per-lead worker cap | `2` |
-| `MAX_DELEGATION_DEPTH` | Lead is depth 0 | `2` |
-| `MAX_COST_USD` | Stop new investigator turns when reported cost reaches cap | `5` |
+| `MAX_MODEL_CALLS` | Inference request cap per run | `90` |
+| `MAX_TOOL_CALLS_PER_AGENT` | Action cap per agent | `24` |
+| `MAX_TOTAL_AGENTS` | Lead and worker cap per run | `9` |
+| `MAX_WORKERS_PER_LEAD` | Specialist cap under each lead | `2` |
+| `MAX_DELEGATION_DEPTH` | Maximum agent tree depth | `2` |
+| `MAX_COST_USD` | Stop threshold using reported run cost | `5` |
 
-OpenRouter's [tool-calling documentation](https://openrouter.ai/docs/guides/features/tool-calling) describes the investigator request shape. Jev uses a [typed Choice](https://docs.typesafe.ai/primitives/choice) through OpenRouter's decisions endpoint. Jev recommendations are advisory; deterministic policy remains the only authorization decision maker.
+## API
 
-## Tests and experiment workflow
+Interactive OpenAPI documentation is at `/api/docs`.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/health` | Provider readiness without revealing credentials |
+| `GET /api/cases` | Public case catalog |
+| `GET /api/agent-catalog` | Agent templates, skills, and core tools |
+| `POST /api/runs` | Launch a default or custom team |
+| `GET /api/runs/{id}` | Current run snapshot |
+| `GET /api/runs/{id}/events` | Ordered event ledger |
+| `GET /api/runs/{id}/report` | Plain-language run report |
+| `GET /api/runs/{id}/integrity` | Hash-chain verification |
+| `GET /api/runs/{id}/graph` | Evidence, communication, and delegation graph |
+| `GET /api/compare` | Cross-run evaluation summary |
+
+## Case library
+
+The repository contains 61 fictional cases across five difficulty levels. Each has eight suspects,
+32 evidence items, a public case file, and a separate sealed answer vault. Difficulty changes the
+starting evidence and length of the decisive evidence chain.
 
 ```bash
+uv run python -m lab.validate_case
+```
+
+The validator checks IDs, references, accessibility, matching public/vault versions, and answer
+leakage. These cases are fictional research fixtures and are not intended for real-world criminal,
+legal, or personnel decisions.
+
+## Development and verification
+
+```bash
+uv sync --extra dev
 uv run ruff check .
 uv run pytest -q
 node --check lab/static/app.js
 uv run python -m lab.validate_case
 ```
 
-Start one mock run first to verify your environment. Then change the provider and model settings, restart the server, and launch a fresh run. Each run stores the exact case hash, case ID, difficulty, model configuration, tool/prompt/scoring versions, Git commit when available, event trace, token metadata, and returned cost. The command center explains progress with lifecycle, evidence coverage, tool usage, event composition, and per-agent charts. Evaluation places agent conclusions beside the canonical answer; Communications summarizes what agents discussed and whether their positions changed. Use **Compare runs** to inspect completed runs. The HTTP API is documented at `/api/docs`. Useful local endpoints are `/api/health`, `/api/cases`, `/api/runs`, `/api/compare`, `/api/runs/{run_id}`, and `/api/runs/{run_id}/report`.
+CI repeats these checks and runs a history-aware secret scan. Dependabot monitors Python packages
+and GitHub Actions. See [CONTRIBUTING.md](CONTRIBUTING.md) for extension requirements.
 
-## Current limits
+## Repository map
 
-This is a **local research prototype**. Keep it bound to `127.0.0.1`: there is no user authentication, TLS, separate vault process identity, or production multi-tenant isolation. A host administrator who can alter both the database and its anchors can rewrite history. The scoring rubric is deterministic and transparent but approximates narrative quality using citations and terms; it is not a human adjudicator. The investigator loop uses bounded sequential turns, and provider errors can leave an agent without an accusation rather than fabricating one. OpenRouter's returned usage/cost data may be incomplete, so `MAX_COST_USD` alone is not a guaranteed billing cap; use an OpenRouter key-level spending limit as well.
+```text
+lab/agents.py          agent templates, manifests, and skill permissions
+lab/orchestrator.py    run lifecycle and private agent context
+lab/tools.py           typed tools and deterministic policy checks
+lab/provider.py        model provider adapters
+lab/case.py            public evidence engine
+lab/evaluator.py       post-finalization scoring
+lab/ledger.py          SQLite storage and hash chain
+lab/static/            dependency-free web dashboard
+lab/data/cases/        public case packages
+lab/data/vaults/       sealed evaluation answers
+tests/                 lifecycle, security, provider, and integrity tests
+```
+
+## Contributing and license
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md),
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) first.
+
+Released under the [MIT License](LICENSE).

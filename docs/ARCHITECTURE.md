@@ -1,5 +1,17 @@
 # Architecture and development guide
 
+## Custom agent layer
+
+`lab/agents.py` is the public extension boundary for agent manifests. The API accepts two or three
+validated manifests per run. Each manifest resolves a built-in template plus optional name,
+mission, model, and skill overrides. Skill IDs expand to a fixed set of typed tools; arbitrary
+manifest text never becomes executable code or a new capability.
+
+Resolved manifests are stored in the immutable run configuration and copied into each agent's
+private state. The orchestrator intersects skill permissions with lifecycle permissions before
+giving a provider any tool schema. `ToolDispatcher` repeats the authoritative checks when the
+model requests a tool.
+
 ## Boundaries
 
 The public case engine loads only `lab/data/case_public.json`. The hidden answer lives in `lab/data/case_vault.json`. Only `Evaluator.evaluate` opens the vault, and it checks the persisted run phase before doing so. The orchestrator's model context builder reads agent state, discovered public evidence, received messages, own findings and hypotheses, and public suspect details. It never imports the vault. Tool dispatch is an explicit allowlist of Pydantic-validated actions. There is no generic SQL, Python, file, HTTP, browser, or external MCP tool available to investigators.

@@ -1,7 +1,10 @@
 [project]
 name = "mcs-investigation-lab"
-version = "0.3.0"
-description = "Auditable multi-agent murder investigation research lab"
+version = "0.4.0"
+description = "Open source lab for building, running, and auditing customizable AI investigation teams"
+readme = "README.md"
+license = "MIT"
+authors = [{name = "Vamsi Varma"}]
 requires-python = ">=3.11"
 dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "httpx>=0.27,<1", "pydantic>=2.9,<3"]
 [project.optional-dependencies]
@@ -11,3 +14,8 @@ testpaths = ["tests"]
 pythonpath = ["."]
 [tool.ruff]
 line-length = 100
+
+[project.urls]
+Homepage = "https://github.com/vamsivarma27/mcs-investigation-lab"
+Repository = "https://github.com/vamsivarma27/mcs-investigation-lab"
+Issues = "https://github.com/vamsivarma27/mcs-investigation-lab/issues"

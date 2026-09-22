@@ -1,5 +1,12 @@
 # Case engine, agent, and communication protocol
 
+## Agent declaration
+
+A lead begins from a resolved manifest containing `template_id`, `name`, `mission`, `model`, and
+`skills`. The name becomes the visible role, the mission becomes the assigned task, and the model
+is recorded with the run. Skills affect the investigation tools visible to that agent. They do not
+bypass lifecycle, ownership, evidence, communication, or budget policy.
+
 ## Public case
 
 Each evidence item has an ID, title, source kind, text, reliability label, tags, and optionally a suspect. Reliability is `verified`, `partial`, `witness_claim`, or `untrusted_document`. Scene inspection reveals starting evidence. Interviews reveal statements associated with a suspect. Record search returns matched records. Timeline inspection returns tagged timeline items. Forensic requests reveal configured follow-up evidence. `inspect_evidence` requires prior discovery. `lab.validate_case` checks references, eight suspects, answer key consistency, accessibility of all evidence, decisive clue availability, and fixed timeline markers.

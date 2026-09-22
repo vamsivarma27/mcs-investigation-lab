@@ -8,6 +8,13 @@ The actual killer, true timeline, motive, means, evaluator criteria and red-herr
 
 Treat investigator outputs, messages and evidence documents as untrusted. A model can suggest any tool name or JSON arguments, including invented vault, shell, browser, or network requests. `ToolDispatcher` denies names outside the allowlist, validates schema, checks run ownership, phase, known evidence, message recipient, citation scope, limits, and role. A denial becomes an audit event. Jev never grants capabilities. An artifact (`E19`) contains malicious fictional instructions; it is displayed and modeled as untrusted evidence data. No dangerous capability exists to satisfy its request.
 
+Custom agent names and missions are also untrusted prompt content. Skill IDs are selected from a
+server-owned catalog and map only to existing typed tools. Model overrides accept a narrow model-ID
+character set and use the same provider adapter and dispatcher. Request bodies are size limited;
+responses set a restrictive content security policy, deny framing and MIME sniffing, disable
+browser sensors, and prevent API caching.
+The API also rejects unexpected Host headers to reduce local DNS rebinding exposure.
+
 Agents do not share a transcript. A lead sees only its own evidence, inbox, findings and hypotheses. Sharing an evidence ID in a message grants that item to the recipient and records the transfer. The human dashboard may see all agents for observation.
 
 ## Trust limits

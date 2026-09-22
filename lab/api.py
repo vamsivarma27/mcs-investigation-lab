@@ -3,23 +3,50 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from .agents import AgentInput, public_catalog
 from .config import Settings
 from .orchestrator import Orchestrator
 from .report import build_run_report
 
 settings = Settings()
 lab = Orchestrator(settings)
-app = FastAPI(title="MCS Investigation Lab", version="0.3.0", docs_url="/api/docs", redoc_url=None)
+app = FastAPI(title="MCS Investigation Lab", version="0.4.0", docs_url="/api/docs", redoc_url=None)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]"])
 STATIC = Path(__file__).parent / "static"
 
 
 class NewRun(BaseModel):
     lead_count: int = Field(default=3, ge=2, le=3)
     case_id: str = Field(default="meridian-archive", min_length=3, max_length=100)
+    agents: list[AgentInput] | None = Field(default=None, min_length=2, max_length=3)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > 65_536:
+                return JSONResponse({"detail": "Request body too large"}, status_code=413)
+        except ValueError:
+            return JSONResponse({"detail": "Invalid Content-Length"}, status_code=400)
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; "
+        "form-action 'self'"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/")
@@ -52,6 +79,11 @@ def cases():
     return lab.catalog.list()
 
 
+@app.get("/api/agent-catalog")
+def agent_catalog():
+    return public_catalog()
+
+
 @app.get("/api/cases/{case_id}")
 def case_detail(case_id: str):
     try:
@@ -76,9 +108,11 @@ def runs():
 @app.post("/api/runs", status_code=202)
 def create_run(request: NewRun):
     try:
-        return {"run_id": lab.start(request.lead_count, request.case_id)}
+        return {"run_id": lab.start(request.lead_count, request.case_id, request.agents)}
     except KeyError:
         raise HTTPException(404, "Case not found") from None
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
 
 
 @app.get("/api/runs/{run_id}")

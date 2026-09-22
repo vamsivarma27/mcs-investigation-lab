@@ -5,6 +5,7 @@ from dataclasses import replace
 
 import pytest
 
+from lab.agents import AgentInput, public_catalog
 from lab.case import CaseEngine
 from lab.config import Settings
 from lab.evaluator import Evaluator
@@ -36,6 +37,55 @@ def test_case_catalog_has_more_than_fifty_sealed_cases():
     assert {case["difficulty"] for case in cases} == {"Beginner", "Easy", "Moderate", "Hard", "Expert"}
     assert all(case["evidence_count"] == 32 and case["suspect_count"] == 8 for case in cases)
     assert validate()["valid"]
+
+
+def test_custom_agent_profiles_are_validated_and_limit_tools(lab):
+    team = [
+        AgentInput(template_id="forensic-analyst", name="Trace", mission="Analyze physical traces.",
+                   model="example/tool-model", skills=["scene-analysis", "forensics"]),
+        AgentInput(template_id="timeline-analyst", name="Clock", mission="Reconstruct every time window.",
+                   skills=["timeline-analysis", "records-research"]),
+    ]
+    run = lab.create(case_id="meridian-archive", agents=team)
+    lab._transition(run, "INITIALIZING")
+    lab._create_leads(run)
+    lab._transition(run, "INVESTIGATING")
+    agents = lab._agents(run)
+    assert [agent["role"] for agent in agents] == ["Trace", "Clock"]
+    assert agents[0]["model"] == "example/tool-model"
+    context = lab._context(run, agents[0], "investigation")
+    assert "request_forensic_analysis" in context["allowed_tools"]
+    assert "interview_suspect" not in context["allowed_tools"]
+    assert "submit_final_accusation" in context["allowed_tools"]
+    assert lab.tools.dispatch(run, agents[0]["id"], "interview_suspect",
+                              {"suspect_id": "s_ada"})["denied"]
+    assert lab.tools.dispatch(run, agents[0]["id"], "request_specialist",
+                              {"specialization": "forensic", "task": "Analyze traces"})["denied"]
+    assert lab.tools.dispatch(run, agents[0]["id"], "share_finding",
+                              {"recipient": agents[1]["id"], "content": "A lead"})["denied"]
+    assert public_catalog()["templates"]
+
+
+def test_duplicate_custom_agent_names_fail_closed(lab):
+    agents = [
+        AgentInput(name="Same", mission="Investigate the case independently."),
+        AgentInput(name="same", mission="Review the case evidence independently."),
+    ]
+    with pytest.raises(ValueError, match="unique"):
+        lab.create(agents=agents)
+
+
+def test_local_api_host_and_security_headers():
+    from fastapi.testclient import TestClient
+
+    from lab.api import app
+
+    client = TestClient(app, base_url="http://127.0.0.1:8765")
+    response = client.get("/api/agent-catalog")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+    assert client.get("/api/health", headers={"host": "unexpected.example"}).status_code == 400
 
 
 def test_vault_stays_sealed_and_cross_run_access_denied(lab):
@@ -98,7 +148,7 @@ def test_full_offline_run_persists_evaluates_and_replays(lab):
     assert state["evaluation"]["agents"][1]["drift"]
     assert state["evaluation"]["agents"][1]["changed_after_deliberation"]
     graph = build_graph(lab.ledger, run)
-    assert any(node["label"] == "Lead 1" for node in graph["nodes"])
+    assert any(node["label"] == "Lead Detective" for node in graph["nodes"])
     assert any(edge["type"] == "RECEIVED" for edge in graph["edges"])
     report = build_run_report(lab.ledger, lab.case, run)
     assert report["headline"] == "Investigation completed"

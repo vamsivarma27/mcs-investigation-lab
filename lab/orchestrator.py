@@ -5,6 +5,7 @@ import subprocess
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+from .agents import COMMUNICATION_TOOLS, AgentInput, allowed_tools, default_team, resolve_agent
 from .case import CaseEngine, canonical
 from .case_catalog import CaseCatalog
 from .config import Settings
@@ -40,9 +41,16 @@ class Orchestrator:
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return None
 
-    def create(self, lead_count: int = 3, case_id: str | None = None) -> str:
+    def create(self, lead_count: int = 3, case_id: str | None = None,
+               agents: list[AgentInput] | None = None) -> str:
+        if agents:
+            lead_count = len(agents)
         if lead_count not in {2, 3}:
             raise ValueError("lead_count must be 2 or 3")
+        profiles = ([resolve_agent(agent, self.settings.investigator_model) for agent in agents]
+                    if agents else default_team(lead_count, self.settings.investigator_model))
+        if len({profile["name"].casefold() for profile in profiles}) != len(profiles):
+            raise ValueError("Agent names must be unique within a run")
         selected = self.case if not case_id or case_id == self.case.data["id"] else self.catalog.get(case_id)
         run_id = uuid.uuid4().hex
         config = {"provider": self.settings.provider, "investigator_model": self.settings.investigator_model,
@@ -53,19 +61,21 @@ class Orchestrator:
                   "max_total_agents": self.settings.max_total_agents,
                   "max_workers_per_lead": self.settings.max_workers_per_lead,
                   "max_depth": self.settings.max_depth, "max_cost_usd": self.settings.max_cost_usd},
-                  "prompt_version": "investigator-v2", "tool_version": "tools-v2", "scoring_version": "rubric-v1",
+                  "prompt_version": "investigator-v3", "tool_version": "tools-v3", "scoring_version": "rubric-v1",
                   "case_id": selected.data["id"], "case_title": selected.data["title"],
                   "case_difficulty": selected.data.get("difficulty", "Moderate"),
                   "case_version": selected.data["version"], "case_hash": selected.version_hash,
-                  "app_version": "0.3.0", "git_commit": self._git_commit(), "lead_count": lead_count}
+                  "app_version": "0.4.0", "git_commit": self._git_commit(), "lead_count": lead_count,
+                  "agent_profiles": profiles}
         with self.ledger.connect() as db:
             db.execute("INSERT INTO runs (id,phase,created_at,case_hash,config) VALUES (?,?,?,?,?)",
                        (run_id, "CREATED", utcnow(), selected.version_hash, canonical(config)))
         self.ledger.append(run_id, "RUN_CREATED", {"config": config})
         return run_id
 
-    def start(self, lead_count: int = 3, case_id: str | None = None) -> str:
-        run_id = self.create(lead_count, case_id)
+    def start(self, lead_count: int = 3, case_id: str | None = None,
+              agents: list[AgentInput] | None = None) -> str:
+        run_id = self.create(lead_count, case_id, agents)
         self.pool.submit(self.execute, run_id)
         return run_id
 
@@ -91,15 +101,25 @@ class Orchestrator:
     def _create_leads(self, run_id: str) -> None:
         with self.ledger.connect() as db:
             config = json.loads(db.execute("SELECT config FROM runs WHERE id=?", (run_id,)).fetchone()["config"])
-        for i in range(config["lead_count"]):
+        profiles = config.get("agent_profiles") or default_team(
+            config["lead_count"], self.settings.investigator_model
+        )
+        for profile in profiles:
             aid = uuid.uuid4().hex
-            role = f"Lead {i + 1}"
+            role = profile["name"]
+            private_state = {
+                "known_evidence": [],
+                "profile": {"template_id": profile["template_id"], "skills": profile["skills"]},
+            }
             with self.ledger.connect() as db:
                 db.execute("INSERT INTO agents VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                           (aid, run_id, None, aid, role, "Investigate independently and report with citations", 0,
-                            "active", canonical({"known_evidence": []}), self.settings.investigator_model, utcnow(), None, 0))
-            self.ledger.append(run_id, "AGENT_CREATED", {"role": role, "task": "Independent investigation"}, aid)
-            self.ledger.append(run_id, "TASK_ASSIGNED", {"task": "Investigate the case and submit an independent accusation"}, aid)
+                           (aid, run_id, None, aid, role, profile["mission"], 0,
+                            "active", canonical(private_state), profile["model"], utcnow(), None, 0))
+            self.ledger.append(run_id, "AGENT_CREATED", {
+                "role": role, "task": profile["mission"], "template_id": profile["template_id"],
+                "skills": profile["skills"], "model": profile["model"],
+            }, aid)
+            self.ledger.append(run_id, "TASK_ASSIGNED", {"task": profile["mission"]}, aid)
 
     def _agents(self, run_id: str, leads_only: bool = False) -> list[dict]:
         clause = " AND parent_id IS NULL" if leads_only else ""
@@ -128,10 +148,14 @@ class Orchestrator:
             if event["agent_id"] == agent["id"] and event["event_type"] in {"TOOL_REQUEST", "TOOL_DENIED"}:
                 item = {"event": event["event_type"], **event["payload"]}
                 recent_actions.append(item)
-        allowed = [name for name in SCHEMAS if stage == "investigation" or
+        profile = state.get("profile") or {}
+        permitted = allowed_tools(profile.get("skills", list(self._all_skill_ids())))
+        if stage == "deliberation":
+            permitted.update(COMMUNICATION_TOOLS)
+        allowed = [name for name in SCHEMAS if name in permitted and (stage == "investigation" or
                    (stage == "independent" and name == "submit_final_accusation") or
                    (stage == "deliberation" and name in {"send_message", "request_peer_review", "share_finding", "challenge_hypothesis"}) or
-                   (stage == "final" and name == "submit_final_accusation")]
+                   (stage == "final" and name == "submit_final_accusation"))]
         requested_tools = {item.get("tool") for item in recent_actions if item["event"] == "TOOL_REQUEST"}
         if stage == "investigation":
             allowed = [name for name in allowed
@@ -140,7 +164,8 @@ class Orchestrator:
                 allowed = ["submit_hypothesis"]
                 progress_instruction = "Record an evidence-cited hypothesis now before gathering more evidence."
             elif agent["tool_calls"] >= 5 and not sent_messages:
-                allowed = ["send_message", "request_peer_review", "share_finding"]
+                allowed = [name for name in ("send_message", "request_peer_review", "share_finding")
+                           if name in permitted]
                 progress_instruction = "Share evidence or request peer review now before the conclusion stage."
             else:
                 progress_instruction = "Choose a new action. Do not repeat the same tool and arguments."
@@ -148,7 +173,8 @@ class Orchestrator:
             progress_instruction = "Complete the required action for this stage."
         return {"case": case.overview(),
                 "agent": {"id": agent["id"], "role": agent["role"], "task": agent["task"],
-                          "parent_id": agent["parent_id"], "tool_calls": agent["tool_calls"]},
+                          "parent_id": agent["parent_id"], "tool_calls": agent["tool_calls"],
+                          "model": agent["model"], "skills": profile.get("skills", [])},
                 "known_evidence": known, "evidence": [case.get(eid) for eid in known],
                 "inbox": [{**m, "related_evidence": json.loads(m["related_evidence"])} for m in inbox],
                 "own_hypotheses": [{**h, "support": json.loads(h["support"]), "contradict": json.loads(h["contradict"])} for h in hypotheses],
@@ -156,6 +182,12 @@ class Orchestrator:
                 "peers": peers, "recent_actions": recent_actions[-12:],
                 "progress_instruction": progress_instruction,
                 "allowed_tools": {name: SCHEMAS[name].model_json_schema() for name in allowed}}
+
+    @staticmethod
+    def _all_skill_ids() -> list[str]:
+        from .agents import SKILLS
+
+        return list(SKILLS)
 
     def _resource_usage(self, run_id: str) -> dict:
         events = self.ledger.events(run_id)
